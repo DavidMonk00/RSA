@@ -94,7 +94,7 @@ public class Encrypt {
 		//Write to file
 		try {
 			FileData.Write(new_filepath, this.filepath.split("\\.")[1], false);
-			FileData.Write(new_filepath, this.key_file, true);
+			FileData.Write(new_filepath, this.key_file.split("/")[this.key_file.split("/").length - 1], true);
 		} 
 		catch (IOException e) {
 		}

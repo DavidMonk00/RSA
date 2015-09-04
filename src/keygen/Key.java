@@ -2,15 +2,18 @@ package keygen;
 
 import java.math.BigInteger;
 import java.util.Random;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import filemanagement.FileData;
+import javax.swing.JOptionPane;
+import filemanagement.DeleteFile;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.commons.net.ftp.*;
 
 public class Key {
 	int strength;
@@ -25,6 +28,7 @@ public class Key {
 	BigInteger d;
 	public PublicKey publickey;
 	public PrivateKey privatekey;
+	String filepath;
 	
 	public Key(int exp){
 		this.strength = exp;
@@ -63,9 +67,9 @@ public class Key {
 			dir.mkdir();
 		}
 		//Create file
-		String filepath = System.getProperty("user.home") + "/keys/" + String.valueOf(this.strength)+ "_" + getDateTime();
+		this.filepath = System.getProperty("user.home") + "/" + String.valueOf(this.strength)+ "_" + getDateTime();
 		
-		File file = new File(filepath);  
+		File file = new File(this.filepath);  
 		try {  
 		file.createNewFile();
 		}
@@ -74,11 +78,35 @@ public class Key {
 		}
 		//Write to file
 		try {
-			FileData.Write(filepath, publickey.n.toString(),true);
-			FileData.Write(filepath, publickey.e.toString(),true);
-			FileData.Write(filepath, privatekey.d.toString(),true);
+			FileData.Write(this.filepath, publickey.n.toString(),true);
+			FileData.Write(this.filepath, publickey.e.toString(),true);
+			FileData.Write(this.filepath, privatekey.d.toString(),true);
 		} 
 		catch (IOException e) {
 		}
+	}
+	public void UploadKey() throws SocketException, IOException{
+		FTPClient ftp = new FTPClient();
+		FTPClientConfig config = new FTPClientConfig();
+		ftp.configure(config);
+		String server = "nicmach.comxa.com";
+		ftp.connect(server);
+		String pwd = JOptionPane.showInputDialog("Please enter password for server:");
+	    ftp.login("a8558342", pwd);
+	    int reply = ftp.getReplyCode();
+	    if(!FTPReply.isPositiveCompletion(reply)) {
+	        ftp.disconnect();
+	        System.err.println("FTP server refused connection.");
+	        System.exit(1);
+	    }
+	    InputStream input = new FileInputStream(this.filepath);
+	    ftp.storeFile("/public_html/keys/" + String.valueOf(this.strength)+ "_" + getDateTime(), input);
+	    input.close();
+	    ftp.logout();
+	    ftp.disconnect();
+	}
+	public void DeleteFile(){
+		@SuppressWarnings("unused")
+		DeleteFile a = new DeleteFile(this.filepath);
 	}
 }

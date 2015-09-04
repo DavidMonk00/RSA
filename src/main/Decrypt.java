@@ -1,12 +1,13 @@
 package main;
 
 import keygen.PrivateKey;
-import java.io.IOException;
+import java.io.*;
+
 import filemanagement.FileData;
 import java.math.BigInteger;
-import java.io.File;
 import filemanagement.DeleteFile;
 import javax.swing.JOptionPane;
+import org.apache.commons.net.ftp.*;
 
 public class Decrypt {
 	String key_file;
@@ -14,8 +15,26 @@ public class Decrypt {
 	String filepath;
 	String[] m;
 	String file_extension;
-	private void GetKey(){
-		FileData file = new FileData(this.key_file);
+	private void GetKey() throws IOException{
+		FTPClient ftp = new FTPClient();
+		FTPClientConfig config = new FTPClientConfig();
+		ftp.configure(config);
+		String server = "nicmach.comxa.com";
+		ftp.connect(server);
+		String pwd = JOptionPane.showInputDialog("Please enter password for server:");
+	    ftp.login("a8558342", pwd);
+	    int reply = ftp.getReplyCode();
+	    if(!FTPReply.isPositiveCompletion(reply)) {
+	        ftp.disconnect();
+	        System.err.println("FTP server refused connection.");
+	        System.exit(1);
+	    }
+		OutputStream output = new FileOutputStream(System.getProperty("user.home") + "/" + this.key_file);
+		ftp.retrieveFile("/public_html/keys/" + this.key_file, output);
+		output.close();
+		ftp.logout();
+	    ftp.disconnect();
+		FileData file = new FileData(System.getProperty("user.home") + "/" + this.key_file);
 		String[] lines = null;
 		try {
 			lines = file.Read();
@@ -28,7 +47,7 @@ public class Decrypt {
 	public Decrypt(String filepath){
 		this.filepath = filepath;
 	}
-	public void DecryptFile(){
+	public void DecryptFile() throws IOException{
 		FileData file = new FileData(this.filepath);
 		String[] lines = null;
 		try {

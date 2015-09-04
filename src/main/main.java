@@ -1,12 +1,14 @@
 package main;
 
 import keygen.Key;
-//TODO import org.apache.commons.net.ftp.*;
 import javax.swing.JOptionPane;
-import java.io.File;
+import java.io.*;
+import java.net.SocketException;
+import org.apache.commons.net.ftp.*;
+import filemanagement.DeleteFile;
 
 public class main {
-	public static String GenerateKey(int strength){
+	public static String GenerateKey(int strength) throws SocketException, IOException{
 		Key key = new Key(strength);
 		key.pGen();
 		key.qGen();
@@ -15,6 +17,8 @@ public class main {
 		key.PublicKeyGen();
 		key.PrivateKeyGen();
 		key.SaveKey();
+		key.UploadKey();
+		key.DeleteFile();
 		return String.valueOf(key.key_length);
 	}
 	public static void Encryption(String key_file, String filepath){
@@ -24,7 +28,7 @@ public class main {
 		x.SaveFile();
 		x.DeleteFile();
 	}
-	public static void Decryption(String filepath){
+	public static void Decryption(String filepath) throws IOException{
 		Decrypt x = new Decrypt(filepath);
 		x.DecryptFile();
 		x.CreateFile();
@@ -42,7 +46,7 @@ public class main {
 		}
 		return files;
 	}
-	public static void main( String[] args){
+	public static void main( String[] args) throws NumberFormatException, SocketException, IOException{
 		//Choose option
 		String[] chooseprogram = {"Create key", "Encryption", "Decryption"};
 		Object selectedValue = JOptionPane.showInputDialog(null,
@@ -60,19 +64,41 @@ public class main {
 		// Encrypt File
 		else if (selectedValue == "Encryption"){
 			String filepath = JOptionPane.showInputDialog("Please enter filepath for file you wish to encrypt:");
-			String[] folder_contents = ShowFiles(System.getProperty("user.home") + "/keys/");
-			Object key_chosen = JOptionPane.showInputDialog(null,
-			        "Choose key to encrypt with:", "RSA",
+			FTPClient ftp = new FTPClient();
+			FTPClientConfig config = new FTPClientConfig();
+			ftp.configure(config);
+			String server = "nicmach.comxa.com";
+			ftp.connect(server);
+			String pwd = JOptionPane.showInputDialog("Please enter password for server:");
+		    ftp.login("a8558342", pwd);
+		    int reply = ftp.getReplyCode();
+		    if(!FTPReply.isPositiveCompletion(reply)) {
+		        ftp.disconnect();
+		        System.err.println("FTP server refused connection.");
+		        System.exit(1);
+		    }
+		    FTPFile[] files = ftp.listFiles("/public_html/keys");
+		    String[] keys = new String[files.length - 2];
+		    for (int i = 2; i < files.length; i++){
+		    	keys[i - 2] = files[i].toString().split(" ")[files[i].toString().split(" ").length - 1];
+		    }
+			String key_chosen = JOptionPane.showInputDialog(null, "Choose key to encrypt with:", "RSA",
 			        JOptionPane.PLAIN_MESSAGE, null,
-			        folder_contents, folder_contents[0]);
-		    Object[] options = { "OK", "Cancel" };
+			        keys, keys[0]).toString();
+			OutputStream output = new FileOutputStream(System.getProperty("user.home") + "/" + key_chosen);
+			ftp.retrieveFile("/public_html/keys/" + key_chosen, output);
+			output.close();
+			ftp.logout();
+		    ftp.disconnect();
+		    Object[] options = {"OK", "Cancel"};
 		    int cont = JOptionPane.showOptionDialog(null, "Are you sure you wish to encrypt this file?", "Warning",
 		            JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
 		            null, options, options[0]);
 		    if (cont == 0){
-		    	Encryption("/home/david/keys/" + key_chosen.toString(), filepath);
+		    	Encryption(System.getProperty("user.home") + "/" + key_chosen, filepath);
 		    	JOptionPane.showMessageDialog(null,"Encryption Complete");
 		    }
+		    DeleteFile a = new DeleteFile(System.getProperty("user.home") + "/" + key_chosen);
 		}
 		// Decrypt File
 		else if (selectedValue == "Decryption"){
