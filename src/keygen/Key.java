@@ -8,6 +8,9 @@ import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import filemanagement.FileData;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Key {
 	int strength;
@@ -54,8 +57,14 @@ public class Key {
 	     return dateFormat.format(date);
 	 }
 	public void SaveKey(){
+		Path path = Paths.get(System.getProperty("user.home") + "/keys");
+		if (Files.notExists(path)) {
+			File dir = new File(System.getProperty("user.home") + "/keys");
+			dir.mkdir();
+		}
 		//Create file
-		String filepath = "/home/david/keys/" + String.valueOf(this.strength)+ "_" + getDateTime();
+		String filepath = System.getProperty("user.home") + "/keys/" + String.valueOf(this.strength)+ "_" + getDateTime();
+		
 		File file = new File(filepath);  
 		try {  
 		file.createNewFile();

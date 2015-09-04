@@ -60,7 +60,7 @@ public class main {
 		// Encrypt File
 		else if (selectedValue == "Encryption"){
 			String filepath = JOptionPane.showInputDialog("Please enter filepath for file you wish to encrypt:");
-			String[] folder_contents = ShowFiles("/home/david/keys/");
+			String[] folder_contents = ShowFiles(System.getProperty("user.home") + "/keys/");
 			Object key_chosen = JOptionPane.showInputDialog(null,
 			        "Choose key to encrypt with:", "RSA",
 			        JOptionPane.PLAIN_MESSAGE, null,
@@ -77,7 +77,6 @@ public class main {
 		// Decrypt File
 		else if (selectedValue == "Decryption"){
 			String filepath_decryption = JOptionPane.showInputDialog("Please enter filepath for file you wish to decrypt:");
-			System.out.println(filepath_decryption);
 			if (filepath_decryption != null){
 				Decryption(filepath_decryption);
 				JOptionPane.showMessageDialog(null,"Decryption Complete");
