@@ -31,6 +31,7 @@ public class main {
 		x.DeleteFile();
 	}
 	public static String[] ShowFiles(String folderpath){
+		// Shows all files within a certain folder
 		File folder = new File(folderpath);
 		File[] listOfFiles = folder.listFiles();
 		String[] files = new String[listOfFiles.length];
@@ -42,11 +43,13 @@ public class main {
 		return files;
 	}
 	public static void main( String[] args){
+		//Choose option
 		String[] chooseprogram = {"Create key", "Encryption", "Decryption"};
 		Object selectedValue = JOptionPane.showInputDialog(null,
 		        "Choose option:", "RSA",
 		        JOptionPane.PLAIN_MESSAGE, null,
 		        chooseprogram, chooseprogram[0]);
+		// Key Generation
 		if (selectedValue == "Create key"){
 			String strength = JOptionPane.showInputDialog("Enter desired strength:");
 			if (strength != null){
@@ -54,6 +57,7 @@ public class main {
 				JOptionPane.showMessageDialog(null,"Key generated.\nKey Length: " + key_length);
 			}	
 		}
+		// Encrypt File
 		else if (selectedValue == "Encryption"){
 			String filepath = JOptionPane.showInputDialog("Please enter filepath for file you wish to encrypt:");
 			String[] folder_contents = ShowFiles("/home/david/keys/");
@@ -70,6 +74,7 @@ public class main {
 		    	JOptionPane.showMessageDialog(null,"Encryption Complete");
 		    }
 		}
+		// Decrypt File
 		else if (selectedValue == "Decryption"){
 			String filepath_decryption = JOptionPane.showInputDialog("Please enter filepath for file you wish to decrypt:");
 			System.out.println(filepath_decryption);
