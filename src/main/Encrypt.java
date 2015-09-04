@@ -1,79 +1,113 @@
 package main;
 
-import keygen.Key;
-//TODO import org.apache.commons.net.ftp.*;
-import javax.swing.JOptionPane;
+import java.io.IOException;
+import keygen.PublicKey;
+import filemanagement.FileData;
+import java.math.BigInteger;
 import java.io.File;
+import filemanagement.DeleteFile;
+import javax.swing.JOptionPane;
 
-public class main {
-	public static String GenerateKey(int strength){
-		Key key = new Key(strength);
-		key.pGen();
-		key.qGen();
-		key.nGen();
-		key.dGen();
-		key.PublicKeyGen();
-		key.PrivateKeyGen();
-		key.SaveKey();
-		return String.valueOf(key.key_length);
-	}
-	public static void Encryption(String key_file, String filepath){
-		Encrypt x = new Encrypt(key_file, filepath);
-		x.ConvertFile();
-		x.EncryptFile();
-		x.SaveFile();
-		x.DeleteFile();
-	}
-	public static void Decryption(String filepath){
-		Decrypt x = new Decrypt(filepath);
-		x.DecryptFile();
-		x.CreateFile();
-		x.DeleteFile();
-	}
-	public static String[] ShowFiles(String folderpath){
-		File folder = new File(folderpath);
-		File[] listOfFiles = folder.listFiles();
-		String[] files = new String[listOfFiles.length];
-		for (int i = 0; i < listOfFiles.length; i++){
-			if (listOfFiles[i].isFile()){
-			   files[i] = listOfFiles[i].getName();
-			}	
+public class Encrypt {
+	String key_file;
+	PublicKey publickey;
+	String filepath;
+	
+	public BigInteger[][] m;
+	public String[] c;
+	public Encrypt(String key_file, String filepath){
+		this.key_file = key_file;
+		FileData file = new FileData(key_file);
+		String[] lines = null;
+		try {
+			lines = file.Read();
+		} 
+		catch (IOException e) {
+			JOptionPane.showMessageDialog(null, key_file + " does not exist.", "Error", JOptionPane.ERROR_MESSAGE);
 		}
-		return files;
+		this.publickey = new PublicKey(new BigInteger(lines[0]), new BigInteger(lines[1]));
+		this.filepath = filepath;
 	}
-	public static void main( String[] args){
-		String[] chooseprogram = {"Encryption", "Decryption", "Create key"};
-		Object selectedValue = JOptionPane.showInputDialog(null,
-		        "Choose option:", "RSA",
-		        JOptionPane.PLAIN_MESSAGE, null,
-		        chooseprogram, chooseprogram[0]);
-		if (selectedValue == "Create key"){
-			int strength = Integer.parseInt(JOptionPane.showInputDialog("Enter desired strength:"));
-			String key_length = GenerateKey(strength);
-			JOptionPane.showMessageDialog(null,"Key generated.\nKey Length: " + key_length);
+	public void ConvertFile(){
+		FileData file = new FileData(this.filepath);
+		String[] lines = null;
+		try {
+			lines = file.Read();
+		} 
+		catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "File does not exist.", "Error", JOptionPane.ERROR_MESSAGE);
 		}
-		else if (selectedValue == "Encryption"){
-			String filepath = JOptionPane.showInputDialog("Please enter filepath for file you wish to encrypt:");
-			String[] folder_contents = ShowFiles("/home/david/keys/");
-			Object key_chosen = JOptionPane.showInputDialog(null,
-			        "Choose key to encrypt with:", "RSA",
-			        JOptionPane.PLAIN_MESSAGE, null,
-			        folder_contents, folder_contents[0]);
-		    Object[] options = { "OK", "Cancel" };
-		    int cont = JOptionPane.showOptionDialog(null, "Are you sure you wish to encrypt this file?", "Warning",
-		            JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
-		            null, options, options[0]);
-		    if (cont == 0){
-		    	Encryption("/home/david/keys/" + key_chosen.toString(), filepath);
-		    	JOptionPane.showMessageDialog(null,"Encryption Complete");
-		    }
+		BigInteger[][] array = new BigInteger[lines.length][];
+		for (int i = 0; i < lines.length; i++){
+			char[] char_array = lines[i].toCharArray();
+			String[] int_array = new String[char_array.length];
+			for (int j = 0; j < char_array.length; j++){
+				int_array[j] = String.format("%04d", (int)char_array[j]);
+			}
+			StringBuilder builder = new StringBuilder();
+			for(String s: int_array){
+				builder.append(s);
+			}
+			String int_string = builder.toString();
+			int n_length = publickey.n.toString().length() - 2;
+			int key_number = (int) Math.ceil(int_string.length()/n_length) + 1;
+			BigInteger[] split_array = new BigInteger[key_number];
+			for (int j = 0; j < key_number; j++){
+				int index = j*n_length;
+				if (index + n_length < int_string.length()){
+					split_array[j] = new BigInteger("1" + int_string.substring(index, index + n_length));
+				}
+				else {
+					split_array[j] = new BigInteger("1" + int_string.substring(index));
+				}
+				array[i] = split_array;
+			}
 		}
-		else if (selectedValue == "Decryption"){
-			String filepath_decryption = JOptionPane.showInputDialog("Please enter filepath for file you wish to decrypt:");
-			Decryption(filepath_decryption);
-			JOptionPane.showMessageDialog(null,"Decryption Complete");
+		this.m = array;
+	}
+	public void EncryptFile(){
+		String[] c = new String[this.m.length];
+		for (int i = 0; i < this.m.length; i++){
+			String[] x = new String[this.m[i].length];
+			for (int j = 0; j < this.m[i].length; j++){
+				x[j] = m[i][j].modPow(this.publickey.e, this.publickey.n).toString();
+			}
+			StringBuilder builder = new StringBuilder();
+			for(String s: x){
+				builder.append(s + "-");
+			}
+			String x_string = builder.toString();
+			c[i] = x_string;
 		}
-		System.exit(0);
-	}			
+		this.c = c;
+	}
+	public void SaveFile(){
+		//Create file
+		String new_filepath = this.filepath.split("\\.")[0] + ".encrypt";
+		File file = new File(new_filepath);  
+		try {  
+			file.createNewFile();
+		}
+		catch (IOException e) {  
+			e.printStackTrace();  
+		}
+		//Write to file
+		try {
+			FileData.Write(new_filepath, this.filepath.split("\\.")[1], false);
+			FileData.Write(new_filepath, this.key_file, true);
+		} 
+		catch (IOException e) {
+		}
+		for (int i = 0; i < this.c.length; i++){
+			try {
+				FileData.Write(new_filepath, this.c[i], true);
+			} 
+			catch (IOException e) {
+			}
+		}
+	}
+	public void DeleteFile(){
+		@SuppressWarnings("unused")
+		DeleteFile a = new DeleteFile(this.filepath);
+	}
 }
- 
