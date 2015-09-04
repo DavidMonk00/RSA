@@ -42,15 +42,17 @@ public class main {
 		return files;
 	}
 	public static void main( String[] args){
-		String[] chooseprogram = {"Encryption", "Decryption", "Create key"};
+		String[] chooseprogram = {"Create key", "Encryption", "Decryption"};
 		Object selectedValue = JOptionPane.showInputDialog(null,
 		        "Choose option:", "RSA",
 		        JOptionPane.PLAIN_MESSAGE, null,
 		        chooseprogram, chooseprogram[0]);
 		if (selectedValue == "Create key"){
-			int strength = Integer.parseInt(JOptionPane.showInputDialog("Enter desired strength:"));
-			String key_length = GenerateKey(strength);
-			JOptionPane.showMessageDialog(null,"Key generated.\nKey Length: " + key_length);
+			String strength = JOptionPane.showInputDialog("Enter desired strength:");
+			if (strength != null){
+				String key_length = GenerateKey(Integer.parseInt(strength));
+				JOptionPane.showMessageDialog(null,"Key generated.\nKey Length: " + key_length);
+			}	
 		}
 		else if (selectedValue == "Encryption"){
 			String filepath = JOptionPane.showInputDialog("Please enter filepath for file you wish to encrypt:");
@@ -70,8 +72,11 @@ public class main {
 		}
 		else if (selectedValue == "Decryption"){
 			String filepath_decryption = JOptionPane.showInputDialog("Please enter filepath for file you wish to decrypt:");
-			Decryption(filepath_decryption);
-			JOptionPane.showMessageDialog(null,"Decryption Complete");
+			System.out.println(filepath_decryption);
+			if (filepath_decryption != null){
+				Decryption(filepath_decryption);
+				JOptionPane.showMessageDialog(null,"Decryption Complete");
+			}
 		}
 		System.exit(0);
 	}			
